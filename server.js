@@ -16,25 +16,31 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Paksa arahkan ke folder volume /data secara mutlak
-const dbFolder = process.env.RAILWAY_VOLUME_MOUNT_PATH || '/data';
+// ==================== INISIALISASI DATABASE RAILWAY VOLUME AMAN ====================
+const dbFolder = process.env.RAILWAY_VOLUME_MOUNT_PATH || path.join(__dirname, 'data');
 
-// Pastikan direktori /data ada
-if (!fs.existsSync(dbFolder)) {
-  fs.mkdirSync(dbFolder, { recursive: true });
+// Pastikan folder /data atau folder lokal benar-benar ada tanpa bikin crash
+try {
+  if (!fs.existsSync(dbFolder)) {
+    fs.mkdirSync(dbFolder, { recursive: true });
+  }
+} catch (e) {
+  console.log('Catatan direktori:', e.message);
 }
 
 const dbFile = path.join(dbFolder, 'database.sqlite');
-console.log('Database dikunci permanen di:', dbFile);
+console.log('Membuka database di path:', dbFile);
 
-const db = new sqlite3.Database(dbFile, (err) => {
-  if (err) {
-    console.error('Gagal terhubung ke database SQLite:', err.message);
-  } else {
-    console.log('Terhubung ke database SQLite di:', dbFile);
-    initDb(db);
-  }
-});
+// Beri jeda 1 detik agar volume Railway siap sepenuhnya sebelum koneksi dibuka
+setTimeout(() => {
+  const db = new sqlite3.Database(dbFile, (err) => {
+    if (err) {
+      console.error('Gagal terhubung ke database SQLite:', err.message);
+    } else {
+      console.log('Terhubung ke database SQLite di:', dbFile);
+      initDb(db);
+    }
+  });
 
   // Setup Tabel Database
   function initDb(dbInstance) {
@@ -95,7 +101,6 @@ const db = new sqlite3.Database(dbFile, (err) => {
 
     // ==================== ENDPOINT API ====================
 
-    // Login Sederhana
     app.post('/api/login', (req, res) => {
       const { username, password } = req.body;
       if (username === 'admin' && password === '123') {
@@ -107,7 +112,6 @@ const db = new sqlite3.Database(dbFile, (err) => {
       }
     });
 
-    // Ambil Semua Produk
     app.get('/api/products', (req, res) => {
       dbInstance.all(`SELECT * FROM products ORDER BY id DESC`, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -115,7 +119,6 @@ const db = new sqlite3.Database(dbFile, (err) => {
       });
     });
 
-    // Tambah Produk Baru
     app.post('/api/products', (req, res) => {
       const { code, name, type, category, retail_price, wholesale_price, stock, image, p, l, t } = req.body;
       const query = `INSERT INTO products (code, name, type, category, retail_price, wholesale_price, stock, image, p, l, t) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
@@ -125,7 +128,6 @@ const db = new sqlite3.Database(dbFile, (err) => {
       });
     });
 
-    // Update Produk
     app.put('/api/products/:id', (req, res) => {
       const { code, name, type, category, retail_price, wholesale_price, stock, image, p, l, t } = req.body;
       const query = `UPDATE products SET code = ?, name = ?, type = ?, category = ?, retail_price = ?, wholesale_price = ?, stock = ?, image = COALESCE(NULLIF(?, ''), image), p = ?, l = ?, t = ? WHERE id = ?`;
@@ -135,7 +137,6 @@ const db = new sqlite3.Database(dbFile, (err) => {
       });
     });
 
-    // Hapus Produk
     app.delete('/api/products/:id', (req, res) => {
       dbInstance.run(`DELETE FROM products WHERE id = ?`, [req.params.id], function(err) {
         if (err) return res.status(500).json({ error: err.message });
@@ -143,7 +144,6 @@ const db = new sqlite3.Database(dbFile, (err) => {
       });
     });
 
-    // Ambil Riwayat Transaksi
     app.get('/api/transactions', (req, res) => {
       dbInstance.all(`SELECT * FROM transactions ORDER BY id DESC`, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -151,7 +151,6 @@ const db = new sqlite3.Database(dbFile, (err) => {
       });
     });
 
-    // Simpan Transaksi & Nama Pelanggan Serta Kurangi Stok
     app.post('/api/transactions', (req, res) => {
       const { price_mode, total, paid, change_amount, customer, items } = req.body;
       const invoice = 'INV-' + Date.now();
@@ -172,7 +171,6 @@ const db = new sqlite3.Database(dbFile, (err) => {
             });
             updateStmt.finalize();
 
-            // Catat otomatis ke keuangan harian sebagai omzet
             dbInstance.run(`INSERT INTO financials (date, description, type, amount) VALUES (?, ?, ?, ?)`, [date.slice(0, 10), `Penjualan ${invoice} (${customerName})`, 'omzet', total]);
 
             res.json({
@@ -184,7 +182,6 @@ const db = new sqlite3.Database(dbFile, (err) => {
       });
     });
 
-    // Hapus Transaksi Tertentu
     app.delete('/api/transactions/:id', (req, res) => {
       dbInstance.run(`DELETE FROM transactions WHERE id = ?`, [req.params.id], function(err) {
         if (err) return res.status(500).json({ error: err.message });
@@ -192,7 +189,6 @@ const db = new sqlite3.Database(dbFile, (err) => {
       });
     });
 
-    // Hapus Semua Riwayat Transaksi
     app.delete('/api/transactions', (req, res) => {
       dbInstance.run(`DELETE FROM transactions`, [], function(err) {
         if (err) return res.status(500).json({ error: err.message });
@@ -200,7 +196,6 @@ const db = new sqlite3.Database(dbFile, (err) => {
       });
     });
 
-    // Ambil Catatan Keuangan & Modal
     app.get('/api/financials', (req, res) => {
       dbInstance.all(`SELECT * FROM financials ORDER BY id DESC`, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -208,7 +203,6 @@ const db = new sqlite3.Database(dbFile, (err) => {
       });
     });
 
-    // Tambah Catatan Modal / Pengeluaran
     app.post('/api/financials', (req, res) => {
       const { date, description, type, amount } = req.body;
       dbInstance.run(`INSERT INTO financials (date, description, type, amount) VALUES (?, ?, ?, ?)`, [date, description, type, amount], function(err) {
@@ -217,7 +211,6 @@ const db = new sqlite3.Database(dbFile, (err) => {
       });
     });
 
-    // Hapus Catatan Keuangan
     app.delete('/api/financials/:id', (req, res) => {
       dbInstance.run(`DELETE FROM financials WHERE id = ?`, [req.params.id], function(err) {
         if (err) return res.status(500).json({ error: err.message });
@@ -228,6 +221,6 @@ const db = new sqlite3.Database(dbFile, (err) => {
 
   // Jalankan Server
   app.listen(PORT, () => {
-    console.log(`Server Petshop & Aquarium 99 berjalan di http://localhost:${PORT}`);
+    console.log(`Server berjalan di http://localhost:${PORT}`);
   });
 }, 1000);
