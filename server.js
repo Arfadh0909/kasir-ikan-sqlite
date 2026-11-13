@@ -16,12 +16,24 @@ app.get('/', (req, res) => {
 
 // Inisialisasi Database SQLite
 const dbFolder = process.env.RAILWAY_VOLUME_MOUNT_PATH || __dirname;
+
+// Pastikan folder volume ada sebelum membuat koneksi database
+if (!fs.existsSync(dbFolder)) {
+  try {
+    fs.mkdirSync(dbFolder, { recursive: true });
+  } catch (e) {
+    console.log('Menunggu volume ter-mount...');
+  }
+}
+
 const dbFile = path.join(dbFolder, 'database.sqlite');
+console.log('Membuka database di:', dbFile);
+
 const db = new sqlite3.Database(dbFile, (err) => {
   if (err) {
     console.error('Gagal terhubung ke database SQLite:', err.message);
   } else {
-    console.log('Terhubung ke database SQLite.');
+    console.log('Terhubung ke database SQLite di:', dbFile);
     initDb();
   }
 });
