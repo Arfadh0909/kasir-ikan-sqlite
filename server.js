@@ -14,20 +14,21 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Inisialisasi Database SQLite
-const dbFolder = process.env.RAILWAY_VOLUME_MOUNT_PATH || __dirname;
+// Inisialisasi Database SQLite yang Aman untuk Railway Volume
+const dbFolder = process.env.RAILWAY_VOLUME_MOUNT_PATH || path.join(__dirname);
 
-// Pastikan folder volume ada sebelum membuat koneksi database
-if (!fs.existsSync(dbFolder)) {
-  try {
+// Gunakan try-catch agar jika folder belum siap, aplikasi tidak langsung crash
+let dbFile = 'database.sqlite';
+try {
+  const dbFolder = process.env.RAILWAY_VOLUME_MOUNT_PATH || __dirname;
+  if (!fs.existsSync(dbFolder)) {
     fs.mkdirSync(dbFolder, { recursive: true });
-  } catch (e) {
-    console.log('Menunggu volume ter-mount...');
   }
+  dbFile = path.join(dbFolder, 'database.sqlite');
+} catch (e) {
+  console.log('Menggunakan direktori lokal:', e.message);
+  dbFile = path.join(__dirname, 'database.sqlite');
 }
-
-const dbFile = path.join(dbFolder, 'database.sqlite');
-console.log('Membuka database di:', dbFile);
 
 const db = new sqlite3.Database(dbFile, (err) => {
   if (err) {
