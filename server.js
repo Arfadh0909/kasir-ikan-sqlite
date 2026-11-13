@@ -16,33 +16,25 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// ==================== INISIALISASI DATABASE RAILWAY VOLUME ====================
-// Mengarahkan ke /data jika berjalan di Railway, atau ke folder lokal (__dirname) jika di komputer lokal
-const dbFolder = process.env.RAILWAY_VOLUME_MOUNT_PATH || __dirname;
+// Paksa arahkan ke folder volume /data secara mutlak
+const dbFolder = process.env.RAILWAY_VOLUME_MOUNT_PATH || '/data';
 
-let dbFile = 'database.sqlite';
-try {
-  if (!fs.existsSync(dbFolder)) {
-    fs.mkdirSync(dbFolder, { recursive: true });
-  }
-  dbFile = path.join(dbFolder, 'database.sqlite');
-} catch (e) {
-  console.log('Catatan direktori:', e.message);
-  dbFile = path.join(__dirname, 'database.sqlite');
+// Pastikan direktori /data ada
+if (!fs.existsSync(dbFolder)) {
+  fs.mkdirSync(dbFolder, { recursive: true });
 }
 
-console.log('Membuka database di path:', dbFile);
+const dbFile = path.join(dbFolder, 'database.sqlite');
+console.log('Database dikunci permanen di:', dbFile);
 
-// Beri jeda kecil agar volume Railway siap sepenuhnya sebelum koneksi dibuka
-setTimeout(() => {
-  const db = new sqlite3.Database(dbFile, (err) => {
-    if (err) {
-      console.error('Gagal terhubung ke database SQLite:', err.message);
-    } else {
-      console.log('Terhubung ke database SQLite di:', dbFile);
-      initDb(db);
-    }
-  });
+const db = new sqlite3.Database(dbFile, (err) => {
+  if (err) {
+    console.error('Gagal terhubung ke database SQLite:', err.message);
+  } else {
+    console.log('Terhubung ke database SQLite di:', dbFile);
+    initDb(db);
+  }
+});
 
   // Setup Tabel Database
   function initDb(dbInstance) {
