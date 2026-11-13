@@ -2,6 +2,7 @@ const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const bodyParser = require('body-parser');
 const path = require('path');
+const fs = require('fs'); // <--- PASTIKAN BARIS INI ADA DI ATAS
 
 const app = express();
 const PORT = process.env.PORT || 3000;
