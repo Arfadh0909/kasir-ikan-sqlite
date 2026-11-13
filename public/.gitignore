@@ -1,0 +1,4 @@
+database.sqlite
+kasir
+node_modules/
+.env
