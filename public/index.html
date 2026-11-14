@@ -64,14 +64,22 @@
             </div>
           </div>
 
-          <div>
-            <label class="block text-xs font-semibold text-stone-600 mb-1">Password</label>
-            <div class="relative">
-              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-stone-400"><i data-lucide="lock" class="w-4 h-4"></i></span>
-              <input type="password" id="login-password" required placeholder="••••••••" 
-                class="w-full pl-10 pr-4 py-2.5 bg-stone-50/50 rounded-xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition">
-            </div>
-          </div>
+          <<div>
+  <label class="block text-xs font-semibold text-stone-600 mb-1">Password</label>
+  <div class="relative">
+    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-stone-400">
+      <i data-lucide="lock"></i>
+    </span>
+    <!-- ID disesuaikan menjadi login-password dan ditambah padding kanan pr-10 untuk ruang ikon mata -->
+    <input type="password" id="login-password" required placeholder="••••••••" 
+      class="w-full pl-10 pr-10 py-2.5 bg-stone-50/50 rounded-xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all">
+    
+    <!-- Tombol Ikon Mata (Show/Hide Password) -->
+    <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-stone-400 hover:text-stone-600 focus:outline-none">
+      <i id="eyeIcon" data-lucide="eye" class="w-5 h-5"></i>
+    </button>
+  </div>
+</div>
 
           <div class="flex items-center justify-between text-xs text-stone-600 pt-1">
             <label class="flex items-center gap-2 cursor-pointer">
@@ -1095,6 +1103,23 @@
       };
       reader.readAsDataURL(file);
     }
+
+    function togglePassword() {
+  const passwordInput = document.getElementById('login-password');
+  
+  if (passwordInput.type === 'password') {
+    passwordInput.type = 'text';
+    // Memperbarui ikon Lucide (jika menggunakan library ikon Lucide)
+    if (typeof lucide !== 'undefined') {
+      lucide.createIcons();
+    }
+  } else {
+    passwordInput.type = 'password';
+    if (typeof lucide !== 'undefined') {
+      lucide.createIcons();
+    }
+  }
+}
   </script>
 </body>
 </html>
